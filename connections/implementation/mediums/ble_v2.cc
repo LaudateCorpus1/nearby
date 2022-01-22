@@ -212,8 +212,10 @@ bool BleV2::StartAdvertising(
     NEARBY_LOGS(ERROR)
         << "Failed to turn on BLE advertising with advertisement bytes="
         << absl::BytesToHexString(advertisement_bytes.data())
+        << ", is_fast_advertisement=" << is_fast_advertisement
         << ", fast advertisement service uuid="
-        << fast_advertisement_service_uuid;
+        << (is_fast_advertisement ? fast_advertisement_service_uuid
+                                  : "[empty]");
 
     // If BLE advertising was not successful, stop the advertisement GATT
     // server.
@@ -304,7 +306,9 @@ bool BleV2::StartScanning(const std::string& service_id, PowerLevel power_level,
     return false;
   }
 
-  // TODO(edwinwu): Start discovered peripheral tracking.
+  // Start to track the advertisement found for specific `service_id`.
+  discovered_peripheral_tracker_->StartTracking(
+      service_id, std::move(callback), fast_advertisement_service_uuid);
 
   // Check if scan has been activated, if yes, no need to notify client
   // to scan again.
@@ -323,14 +327,16 @@ bool BleV2::StartScanning(const std::string& service_id, PowerLevel power_level,
           service_uuids, PowerLevelToPowerMode(power_level),
           {
               .advertisement_found_cb =
-                  [](BleV2Peripheral peripheral,
-                     const BleAdvertisementData& advertisement_data) {
-                    // TODO(b/213835576): Move (or Copy at fallback) the
-                    // BleV2Peripheral.
-                    // TODO(b/216629800): Track the found advertisement.
+                  [this](BleV2Peripheral peripheral,
+                         const BleAdvertisementData& advertisement_data) {
+                    MutexLock lock(&mutex_);
+                    discovered_peripheral_tracker_
+                        ->ProcessFoundBleAdvertisement(std::move(peripheral),
+                                                       advertisement_data);
                   },
           })) {
-    NEARBY_LOGS(INFO) << "Failed to start client scan of BLE services.";
+    NEARBY_LOGS(INFO) << "Failed to start scan of BLE services.";
+    discovered_peripheral_tracker_->StopTracking(service_id);
     // Erase the service id that is just added.
     scanned_service_ids_.erase(service_id);
     return false;
@@ -349,8 +355,9 @@ bool BleV2::StopScanning(const std::string& service_id) {
     return false;
   }
 
-  // TODO(b/213835576): Cancel lost alarm and Stop tracking.
+  // TODO(b/213835576): Cancel lost alarm
 
+  discovered_peripheral_tracker_->StopTracking(service_id);
   scanned_service_ids_.erase(service_id);
   NEARBY_LOGS(INFO) << "Turned off BLE scanning with service id=" << service_id;
 
