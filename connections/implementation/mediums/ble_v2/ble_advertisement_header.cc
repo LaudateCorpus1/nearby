@@ -136,6 +136,16 @@ BleAdvertisementHeader::operator ByteArray() const {
   return ByteArray(std::move(out));
 }
 
+bool BleAdvertisementHeader::operator==(
+    const BleAdvertisementHeader &rhs) const {
+  return this->GetVersion() == rhs.GetVersion() &&
+         this->IsExtendedAdvertisement() == rhs.IsExtendedAdvertisement() &&
+         this->GetNumSlots() == rhs.GetNumSlots() &&
+         this->GetServiceIdBloomFilter() == rhs.GetServiceIdBloomFilter() &&
+         this->GetAdvertisementHash() == rhs.GetAdvertisementHash() &&
+         this->GetPsmValue() == rhs.GetPsmValue();
+}
+
 }  // namespace mediums
 }  // namespace connections
 }  // namespace nearby
