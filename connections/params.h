@@ -27,7 +27,7 @@ namespace connections {
 
 // Used by Discovery in Core::RequestConnection().
 // Used by Advertising in Core::StartAdvertising().
-struct DLL_API ConnectionRequestInfo {
+struct ConnectionRequestInfo {
   // endpoint_info - Identifing information about this endpoint (eg. name,
   //                 device type).
   // listener      - A set of callbacks notified when remote endpoints request a
