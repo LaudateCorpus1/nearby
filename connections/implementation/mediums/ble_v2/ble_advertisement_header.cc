@@ -27,16 +27,18 @@ namespace connections {
 namespace mediums {
 
 // These definitions are necessary before C++17.
-constexpr int BleAdvertisementHeader::kAdvertisementHashLength;
-constexpr int BleAdvertisementHeader::kServiceIdBloomFilterLength;
+constexpr int BleAdvertisementHeader::kAdvertisementHashByteLength;
+constexpr int BleAdvertisementHeader::kServiceIdBloomFilterByteLength;
+constexpr int BleAdvertisementHeader::kDefaultPsmValue;
+constexpr int BleAdvertisementHeader::kPsmValueByteLength;
 
 BleAdvertisementHeader::BleAdvertisementHeader(
     Version version, bool extended_advertisement, int num_slots,
     const ByteArray &service_id_bloom_filter,
     const ByteArray &advertisement_hash, int psm) {
   if (version != Version::kV2 || num_slots < 0 ||
-      service_id_bloom_filter.size() != kServiceIdBloomFilterLength ||
-      advertisement_hash.size() != kAdvertisementHashLength) {
+      service_id_bloom_filter.size() != kServiceIdBloomFilterByteLength ||
+      advertisement_hash.size() != kAdvertisementHashByteLength) {
     return;
   }
 
@@ -93,13 +95,14 @@ BleAdvertisementHeader::BleAdvertisementHeader(
 
   // The next 10 bytes are supposed to be the service_id_bloom_filter.
   service_id_bloom_filter_ =
-      base_input_stream.ReadBytes(kServiceIdBloomFilterLength);
+      base_input_stream.ReadBytes(kServiceIdBloomFilterByteLength);
 
   // The next 4 bytes are supposed to be the advertisement_hash.
-  advertisement_hash_ = base_input_stream.ReadBytes(kAdvertisementHashLength);
+  advertisement_hash_ =
+      base_input_stream.ReadBytes(kAdvertisementHashByteLength);
 
   // The next 2 bytes are PSM value.
-  if (base_input_stream.IsAvailable(sizeof(std::uint16_t))) {
+  if (base_input_stream.IsAvailable(kPsmValueByteLength)) {
     psm_ = static_cast<int>(base_input_stream.ReadUint16());
   }
 }
@@ -121,7 +124,7 @@ BleAdvertisementHeader::operator ByteArray() const {
       static_cast<char>(num_slots_) & kNumSlotsBitmask;
 
   // Convert psm_ value to 2-bytes.
-  ByteArray psm_byte{sizeof(std::uint16_t)};
+  ByteArray psm_byte{kPsmValueByteLength};
   char *data = psm_byte.data();
   data[0] = psm_ & 0xFF00;
   data[1] = psm_ & 0x00FF;
@@ -134,6 +137,16 @@ BleAdvertisementHeader::operator ByteArray() const {
   // clang-format on
 
   return ByteArray(std::move(out));
+}
+
+bool BleAdvertisementHeader::operator==(
+    const BleAdvertisementHeader &rhs) const {
+  return this->GetVersion() == rhs.GetVersion() &&
+         this->IsExtendedAdvertisement() == rhs.IsExtendedAdvertisement() &&
+         this->GetNumSlots() == rhs.GetNumSlots() &&
+         this->GetServiceIdBloomFilter() == rhs.GetServiceIdBloomFilter() &&
+         this->GetAdvertisementHash() == rhs.GetAdvertisementHash() &&
+         this->GetPsm() == rhs.GetPsm();
 }
 
 }  // namespace mediums
