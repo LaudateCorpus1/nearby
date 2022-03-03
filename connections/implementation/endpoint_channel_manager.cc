@@ -19,8 +19,8 @@
 #include <utility>
 
 #include "absl/time/time.h"
-#include "connections/implementation/proto/offline_wire_formats.pb.h"
 #include "connections/implementation/offline_frames.h"
+#include "connections/implementation/proto/offline_wire_formats.pb.h"
 #include "internal/platform/feature_flags.h"
 #include "internal/platform/logging.h"
 #include "internal/platform/mutex.h"
