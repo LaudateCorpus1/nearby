@@ -21,6 +21,7 @@ cc_library(
         "ble_advertisement_header.cc",
         "ble_packet.cc",
         "bloom_filter.cc",
+        "discovered_peripheral_tracker.cc",
     ],
     hdrs = [
         "advertisement_read_result.h",
@@ -28,8 +29,10 @@ cc_library(
         "ble_advertisement_header.h",
         "ble_packet.h",
         "ble_peripheral.h",
+        "ble_utils.h",
         "bloom_filter.h",
         "discovered_peripheral_callback.h",
+        "discovered_peripheral_tracker.h",
     ],
     copts = ["-DCORE_ADAPTER_DLL"],
     visibility = [
@@ -37,7 +40,9 @@ cc_library(
     ],
     deps = [
         "//connections:core_types",
+        "//connections/implementation/mediums:utils",
         "//internal/platform:base",
+        "//internal/platform:comm",
         "//internal/platform:logging",
         "//internal/platform:types",
         "//internal/platform:util",
@@ -46,6 +51,7 @@ cc_library(
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/numeric:int128",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/time",
     ],
 )
@@ -59,11 +65,13 @@ cc_test(
         "ble_packet_test.cc",
         "ble_peripheral_test.cc",
         "bloom_filter_test.cc",
+        "discovered_peripheral_tracker_test.cc",
     ],
     deps = [
         ":ble_v2",
         "//internal/platform:base",
         "//internal/platform:comm",
+        "//internal/platform:types",
         "//internal/platform/implementation/g3",  # buildcleaner: keep
         "@com_github_protobuf_matchers//protobuf-matchers",
         "@com_google_absl//absl/time",

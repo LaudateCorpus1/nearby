@@ -332,8 +332,10 @@ class BleMedium {
   // Ownership of the BleAdvertisementData transfers to the caller at this
   // point.
   struct ScanCallback {
-    std::function<void(const BleAdvertisementData& advertisement_data)>
-        advertisement_found_cb = DefaultCallback<const BleAdvertisementData&>();
+    std::function<void(BlePeripheral& peripheral,
+                       const BleAdvertisementData& advertisement_data)>
+        advertisement_found_cb =
+            DefaultCallback<BlePeripheral&, const BleAdvertisementData&>();
   };
 
   // https://developer.android.com/reference/android/bluetooth/le/BluetoothLeScanner.html#startScan(java.util.List%3Candroid.bluetooth.le.ScanFilter%3E,%20android.bluetooth.le.ScanSettings,%20android.bluetooth.le.ScanCallback)
