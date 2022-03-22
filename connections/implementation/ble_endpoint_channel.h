@@ -25,7 +25,8 @@ namespace connections {
 class BleEndpointChannel final : public BaseEndpointChannel {
  public:
   // Creates both outgoing and incoming Ble channels.
-  BleEndpointChannel(const std::string& channel_name, BleSocket socket);
+  BleEndpointChannel(const std::string& service_id,
+                     const std::string& channel_name, BleSocket socket);
 
   proto::connections::Medium GetMedium() const override;
 
