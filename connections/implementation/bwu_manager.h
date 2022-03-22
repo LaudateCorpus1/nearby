@@ -73,15 +73,14 @@ class BwuManager : public EndpointManager::FrameProcessor {
 
   ~BwuManager() override;
 
-  // This is the point on the outbound BWU protocol where the handler_ is set.
-  // Function initiates the bandwidth upgrade and sends an
-  // UPGRADE_PATH_AVAILABLE OfflineFrame.
+  // Initiates the bandwidth upgrade and sends an UPGRADE_PATH_AVAILABLE
+  // frame to the remote device (Responder). If |new_medium| is not provided,
+  // the best available medium is chosen.
   void InitiateBwuForEndpoint(ClientProxy* client_proxy,
                               const std::string& endpoint_id,
                               Medium new_medium = Medium::UNKNOWN_MEDIUM);
 
   // == EndpointManager::FrameProcessor interface ==.
-  // This is the point on the inbound BWU protocol where the handler_ is set.
   // This is also an entry point for handling messages for both outbound and
   // inbound BWU protocol.
   // @EndpointManagerReaderThread
@@ -91,33 +90,41 @@ class BwuManager : public EndpointManager::FrameProcessor {
   // Cleans up in-progress upgrades after endpoint disconnection.
   // @EndpointManagerReaderThread
   void OnEndpointDisconnect(ClientProxy* client_proxy,
+                            const std::string& service_id,
                             const std::string& endpoint_id,
                             CountDownLatch barrier) override;
+
   void Shutdown();
 
  private:
   static constexpr absl::Duration kReadClientIntroductionFrameTimeout =
       absl::Seconds(5);
-  BwuHandler* SetCurrentBwuHandler(Medium medium);
+
   void InitBwuHandlers();
   void RunOnBwuManagerThread(const std::string& name,
                              std::function<void()> runnable);
   std::vector<Medium> StripOutUnavailableMediums(
-      const std::vector<Medium>& mediums);
-  Medium ChooseBestUpgradeMedium(const std::vector<Medium>& mediums);
+      const std::vector<Medium>& mediums) const;
+  Medium ChooseBestUpgradeMedium(const std::string& endpoint_id,
+                                 const std::vector<Medium>& mediums) const;
 
   // BaseBwuHandler
   using ClientIntroduction = BwuNegotiationFrame::ClientIntroduction;
 
-  // Processes the BwuNegotiationFrames that come over the
-  // EndpointChannel on both initiator and responder side of the upgrade.
+  // Processes the BwuNegotiationFrames that come over the EndpointChannel on
+  // both initiator and responder side of the upgrade.
   void OnBwuNegotiationFrame(ClientProxy* client,
                              const BwuNegotiationFrame frame,
                              const string& endpoint_id);
 
-  // Called to revert any state changed by the Initiator or Responder in the
-  // course of setting up the upgraded medium for an endpoint.
-  void Revert();
+  // Called to revert any state changed by the Initiator in the course of
+  // setting up the upgraded medium for an endpoint.
+  void RevertMediumForEndpoint(const std::string& upgrade_service_id,
+                               const std::string& endpoint_id);
+
+  Medium GetMediumForEndpoint(const std::string& endpoint_id) const;
+  void SetMediumForEndpoint(const std::string& endpoint_id, Medium medium);
+  BwuHandler* GetHandlerForMedium(Medium medium);
 
   // Common functionality to take an incoming connection and go through the
   // upgrade process. This is a callback, invoked by concrete handlers, once
@@ -155,7 +162,6 @@ class BwuManager : public EndpointManager::FrameProcessor {
   void CancelAllRetryUpgradeAlarms();
   void RetryUpgradeMediums(ClientProxy* client, const std::string& endpoint_id,
                            std::vector<Medium> upgrade_mediums);
-  Medium GetEndpointMedium(const std::string& endpoint_id);
   absl::Duration CalculateNextRetryDelay(const std::string& endpoint_id);
   void RetryUpgradesAfterDelay(ClientProxy* client,
                                const std::string& endpoint_id);
@@ -165,8 +171,13 @@ class BwuManager : public EndpointManager::FrameProcessor {
 
   Config config_;
 
+  // The current bandwidth upgrade medium.
+  // Only used if feature flag support_multiple_bwu_mediums is DISABLED.
   Medium medium_ = Medium::UNKNOWN_MEDIUM;
-  BwuHandler* handler_ = nullptr;
+  // Map from endpoint ID to its current bandwidth upgrade medium.
+  // Only used if feature flag support_multiple_bwu_mediums is ENABLED.
+  absl::flat_hash_map<std::string, Medium> endpoint_id_to_medium_;
+
   Mediums* mediums_;
   absl::flat_hash_map<Medium, std::unique_ptr<BwuHandler>> handlers_;
 

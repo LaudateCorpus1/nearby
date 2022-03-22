@@ -15,40 +15,53 @@
 #ifndef CORE_INTERNAL_BASE_BWU_HANDLER_H_
 #define CORE_INTERNAL_BASE_BWU_HANDLER_H_
 
-#include <cstdint>
 #include <memory>
 #include <string>
 
 #include "absl/container/flat_hash_map.h"
-#include "absl/time/clock.h"
 #include "connections/implementation/bwu_handler.h"
-#include "connections/implementation/client_proxy.h"
 #include "connections/implementation/endpoint_channel_manager.h"
-#include "internal/platform/cancelable_alarm.h"
-#include "internal/platform/count_down_latch.h"
-#include "internal/platform/scheduled_executor.h"
-#include "internal/platform/single_thread_executor.h"
 
 namespace location {
 namespace nearby {
 namespace connections {
 
+// Manages the bookkeeping common to all medium handlers. Notably, it tracks all
+// of the service IDs and endpoint IDs that initiated a bandwidth upgrade.
 class BaseBwuHandler : public BwuHandler {
  public:
-  using ClientIntroduction = BwuNegotiationFrame::ClientIntroduction;
+  BaseBwuHandler(BwuNotifications bwu_notifications);
+  ~BaseBwuHandler() override;
 
-  BaseBwuHandler(EndpointChannelManager& channel_manager,
-                 BwuNotifications bwu_notifications)
-      : channel_manager_(&channel_manager),
-        bwu_notifications_(std::move(bwu_notifications)) {}
-  ~BaseBwuHandler() override = default;
+  // BwuHandler:
+  ByteArray InitializeUpgradedMediumForEndpoint(
+      ClientProxy* client, const std::string& service_id,
+      const std::string& endpoint_id) final;
+  void RevertInitiatorState() final;
+  void RevertInitiatorState(const std::string& upgrade_service_id,
+                            const std::string& endpoint_id) final;
 
  protected:
+  // Invoked by InitializeUpgradedMediumForEndpoint and RevertInitiatorState,
+  // respectively, to handle medium-specific logic.
+  virtual ByteArray HandleInitializeUpgradedMediumForEndpoint(
+      ClientProxy* client, const std::string& upgrade_service_id,
+      const std::string& endpoint_id) = 0;
+  virtual void HandleRevertInitiatorStateForService(
+      const std::string& upgrade_service_id) = 0;
+
   // Represents the incoming Socket the Initiator has gotten after initializing
   // its upgraded bandwidth medium.
   EndpointChannelManager* GetEndpointChannelManager();
-  EndpointChannelManager* channel_manager_;
+
   BwuNotifications bwu_notifications_;
+
+ private:
+  // Map from the (wrapped) service ID to endpoint IDs that are initiating a
+  // bandwidth upgrade. Not used for endpoints that respond to bandwidth upgrade
+  // requests from another device.
+  absl::flat_hash_map<std::string, absl::flat_hash_set<std::string>>
+      upgrade_service_id_to_active_endpoint_ids_;
 };
 
 }  // namespace connections
