@@ -40,6 +40,7 @@ cmake(
 cc_library(
     name = "internal",
     srcs = [
+        "base_bwu_handler.cc",
         "base_endpoint_channel.cc",
         "base_pcp_handler.cc",
         "ble_advertisement.cc",
@@ -166,6 +167,8 @@ cc_library(
         "simulation_user.cc",
     ],
     hdrs = [
+        "fake_bwu_handler.h",
+        "fake_endpoint_channel.h",
         "mock_service_controller.h",
         "mock_service_controller_router.h",
         "offline_simulation_user.h",
@@ -192,6 +195,7 @@ cc_test(
     size = "small",
     timeout = "moderate",
     srcs = [
+        "base_bwu_handler_test.cc",
         "base_endpoint_channel_test.cc",
         "base_pcp_handler_test.cc",
         "ble_advertisement_test.cc",

@@ -82,6 +82,7 @@ class EndpointManager {
     //
     // @EndpointManagerThread
     virtual void OnEndpointDisconnect(ClientProxy* client,
+                                      const std::string& service_id,
                                       const std::string& endpoint_id,
                                       CountDownLatch barrier) = 0;
   };
@@ -247,10 +248,12 @@ class EndpointManager {
                       bool notify);
 
   void WaitForEndpointDisconnectionProcessing(ClientProxy* client,
+                                              const std::string& service_id,
                                               const std::string& endpoint_id);
 
   CountDownLatch NotifyFrameProcessorsOnEndpointDisconnect(
-      ClientProxy* client, const std::string& endpoint_id);
+      ClientProxy* client, const std::string& service_id,
+      const std::string& endpoint_id);
 
   std::vector<std::string> SendTransferFrameBytes(
       const std::vector<std::string>& endpoint_ids,

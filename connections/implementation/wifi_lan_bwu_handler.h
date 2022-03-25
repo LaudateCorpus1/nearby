@@ -28,31 +28,10 @@ namespace connections {
 // per-Medium-specific operations needed to upgrade an EndpointChannel.
 class WifiLanBwuHandler : public BaseBwuHandler {
  public:
-  WifiLanBwuHandler(Mediums& mediums, EndpointChannelManager& channel_manager,
-                    BwuNotifications notifications);
-  ~WifiLanBwuHandler() override = default;
+  WifiLanBwuHandler(Mediums& mediums, BwuNotifications notifications);
+  ~WifiLanBwuHandler() override;
 
  private:
-  ByteArray InitializeUpgradedMediumForEndpoint(
-      ClientProxy* client, const std::string& service_id,
-      const std::string& endpoint_id) override;
-
-  void Revert() override;
-
-  std::unique_ptr<EndpointChannel> CreateUpgradedEndpointChannel(
-      ClientProxy* client, const std::string& service_id,
-      const std::string& endpoint_id,
-      const UpgradePathInfo& upgrade_path_info) override;
-
-  Medium GetUpgradeMedium() const override { return Medium::WIFI_LAN; }
-
-  void OnEndpointDisconnect(ClientProxy* client,
-                            const std::string& endpoint_id) override {}
-
-  void OnIncomingWifiLanConnection(ClientProxy* client,
-                                   const std::string& service_id,
-                                   WifiLanSocket socket);
-
   class WifiLanIncomingSocket : public BwuHandler::IncomingSocket {
    public:
     explicit WifiLanIncomingSocket(const std::string& name,
@@ -68,9 +47,28 @@ class WifiLanBwuHandler : public BaseBwuHandler {
     WifiLanSocket socket_;
   };
 
+  // BwuHandler:
+  std::unique_ptr<EndpointChannel> CreateUpgradedEndpointChannel(
+      ClientProxy* client, const std::string& service_id,
+      const std::string& endpoint_id,
+      const UpgradePathInfo& upgrade_path_info) final;
+  Medium GetUpgradeMedium() const final { return Medium::WIFI_LAN; }
+  void OnEndpointDisconnect(ClientProxy* client,
+                            const std::string& endpoint_id) final {}
+
+  // BaseBwuHandler:
+  ByteArray HandleInitializeUpgradedMediumForEndpoint(
+      ClientProxy* client, const std::string& upgrade_service_id,
+      const std::string& endpoint_id) final;
+  void HandleRevertInitiatorStateForService(
+      const std::string& upgrade_service_id) final;
+
+  void OnIncomingWifiLanConnection(ClientProxy* client,
+                                   const std::string& upgrade_service_id,
+                                   WifiLanSocket socket);
+
   Mediums& mediums_;
   WifiLan& wifi_lan_medium_{mediums_.GetWifiLan()};
-  absl::flat_hash_set<std::string> active_service_ids_;
 };
 
 }  // namespace connections
