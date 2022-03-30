@@ -208,6 +208,15 @@ DLL_EXPORT void __stdcall SendPayloadDart(Core *pCore, const char *endpoint_id,
                                           PayloadDart payload_dart,
                                           Dart_Port result_cb);
 
+// Get bytes from a payload
+//
+// payload_id - The payload id to get bytes
+// erase - A flag to check to delete the payload after getting bytes
+//
+// return - bytes from the payload. If not found return null.
+DLL_EXPORT char *__stdcall GetPayloadBytesDart(int64_t payload_id,
+                                               int64_t erase);
+
 }  // namespace windows
 }  // namespace connections
 }  // namespace nearby

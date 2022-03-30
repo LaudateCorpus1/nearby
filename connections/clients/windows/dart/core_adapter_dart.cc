@@ -1,4 +1,4 @@
-// Copyright 2021 Google LLC
+// Copyright 2021-2022 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,13 +21,17 @@
 
 #include "connections/core.h"
 #include "connections/payload.h"
-#include "internal/platform/logging.h"
 #include "internal/platform/file.h"
+#include "internal/platform/logging.h"
+#include "util/gtl/no_destructor.h"
 
 namespace location {
 namespace nearby {
 namespace connections {
 namespace windows {
+
+// TODO(b/222530043) Remove the map after figure how to pass ShareTarget id
+static gtl::NoDestructor<absl::flat_hash_map<int64_t, Payload>> payload_map_;
 
 Strategy GetStrategy(StrategyDart strategy) {
   switch (strategy) {
@@ -408,6 +412,8 @@ void AcceptConnectionDart(Core *pCore, const char *endpoint_id,
                endpoint_id.c_str(), payload.GetId(), payload.GetType(),
                payload.GetOffset());
 
+    payload_map_->insert_or_assign(payload.GetId(), std::move(payload));
+
     Dart_CObject dart_object_endpoint_id;
     dart_object_endpoint_id.type = Dart_CObject_kString;
     dart_object_endpoint_id.value.as_string = (char *)endpoint_id.data();
@@ -564,7 +570,7 @@ void SendPayloadDart(Core *pCore, const char *endpoint_id,
       Payload::Id id = std::hash<std::string>()(file_name_str);
       std::string download_path = GetPayloadPath(id);
       CopyFileA((LPSTR)payload_dart.data, (LPSTR)download_path.c_str(),
-                /*FailIfFileAlreadyExists=*/ false);
+                /*FailIfFileAlreadyExists=*/false);
       NEARBY_LOGS(INFO) << "Copy File to " << download_path;
 
       InputFile input_file(std::to_string(id), payload_dart.size);
@@ -577,6 +583,20 @@ void SendPayloadDart(Core *pCore, const char *endpoint_id,
       break;
   }
 }
+
+char *GetPayloadBytesDart(int64_t payload_id, int64_t erase) {
+  auto it = payload_map_->find(payload_id);
+  if (it != payload_map_->end()) {
+    char* bytes = const_cast<char *>(it->second.AsBytes().data());
+    if (erase) {
+      payload_map_->erase(payload_id);
+    }
+    return bytes;
+  }
+
+  return nullptr;
+}
+
 }  // namespace windows
 }  // namespace connections
 }  // namespace nearby

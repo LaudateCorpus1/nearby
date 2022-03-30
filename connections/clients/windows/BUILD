@@ -58,6 +58,7 @@ cc_windows_dll(
         "//internal/platform:base",
         "//internal/platform/implementation/windows",
         "//third_party/webrtc/files/stable/webrtc/api:create_peerconnection_factory",
+        "//util/gtl:no_destructor",
         "@com_google_absl//absl/strings",
     ],
 )
