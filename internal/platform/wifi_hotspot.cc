@@ -12,24 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "connections/implementation/mediums/mediums.h"
+#include "internal/platform/wifi_hotspot.h"
+
+#include "internal/platform/mutex_lock.h"
 
 namespace location {
 namespace nearby {
-namespace connections {
 
-BluetoothRadio& Mediums::GetBluetoothRadio() { return bluetooth_radio_; }
+WifiHotspotSocket WifiHotspotMedium::ConnectToService(
+    absl::string_view ip_address, int port,
+    CancellationFlag* cancellation_flag) {
+  NEARBY_LOGS(INFO) << "WifiHotspotMedium::ConnectToService: ip address="
+                    << ip_address << ", port=" << port;
+  return WifiHotspotSocket(
+      impl_->ConnectToService(ip_address, port, cancellation_flag));
+}
 
-BluetoothClassic& Mediums::GetBluetoothClassic() { return bluetooth_classic_; }
-
-Ble& Mediums::GetBle() { return ble_; }
-
-WifiLan& Mediums::GetWifiLan() { return wifi_lan_; }
-
-WifiHotspot& Mediums::GetWifiHotspot() { return wifi_hotspot_; }
-
-mediums::WebRtc& Mediums::GetWebRtc() { return webrtc_; }
-
-}  // namespace connections
 }  // namespace nearby
 }  // namespace location
