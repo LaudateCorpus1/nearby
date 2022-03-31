@@ -48,19 +48,19 @@ using ::location::nearby::connections::Status;
 /** This is a GNCAdvertiserConnectionInfo that provides storage for its properties. */
 @interface GNCAdvertiserConnectionInfo : NSObject
 
-@property(nonatomic, readonly) NSString *name;
+@property(nonatomic, readonly) NSData *endpointInfo;
 @property(nonatomic, readonly) NSString *authToken;
 
-- (instancetype)initWithName:(NSString *)name authToken:(NSString *)authToken;
+- (instancetype)initWithEndpointInfo:(NSData *)endpointInfo authToken:(NSString *)authToken;
 
 @end
 
 @implementation GNCAdvertiserConnectionInfo
 
-- (instancetype)initWithName:(NSString *)name authToken:(NSString *)authToken {
+- (instancetype)initWithEndpointInfo:(NSData *)endpointInfo authToken:(NSString *)authToken {
   self = [super init];
   if (self) {
-    _name = [name copy];
+    _endpointInfo = [endpointInfo copy];
     _authToken = [authToken copy];
   }
   return self;
@@ -115,12 +115,10 @@ class GNCAdvertiserConnectionListener {
     if (endpointInfo) {
       GTMLoggerError(@"Connection already initiated for endpoint: %@", endpointId);
     } else {
-      // TODO(b/169292092): endpointInfo is an advertisement byte array. Need to implement to
-      // extract the endpoint name not just force to cast string.
-      NSString *name = ObjCStringFromCppString(std::string(info.remote_endpoint_info));
+      NSData *data = NSDataFromByteArray(info.remote_endpoint_info);
       NSString *authToken = ObjCStringFromCppString(info.authentication_token);
       GNCAdvertiserConnectionInfo *connInfo =
-          [[GNCAdvertiserConnectionInfo alloc] initWithName:name authToken:authToken];
+          [[GNCAdvertiserConnectionInfo alloc] initWithEndpointInfo:data authToken:authToken];
       endpointInfo = [GNCAdvertiserEndpointInfo infoWithEndpointConnectionInfo:connInfo];
 
       // Call the connection initiation handler. Synchronous because it returns the connection
