@@ -43,10 +43,22 @@ To build the Nearby Connection Core library:
 CC=clang CXX=clang++ bazel build -s --check_visibility=false //connections:core  --spawn_strategy=standalone --verbose_failures
 ```
 
-## iOS
-Currently we provide precompiled libraries. See the following page for instructions.
 
-* [iOS](https://github.com/google/nearby/blob/master/docs/ios_build.md)
+## Building for macOS and iOS
+
+Currently we support building with [Swift Package Manager](https://www.swift.org/package-manager).
+
+Prerequisites:
+
+1. Xcode. Available from Apple Store.
+2. Google Protobuf Compiler (protoc). If you have [homebrew](https://brew.sh/) installed, you can do `brew install protobuf`.
 
 
-**Last Updated:** March 2022
+To build the Nearby Connection library, just type:
+
+```shell
+swift build
+```
+
+
+**Last Updated:** April 2022
